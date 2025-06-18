@@ -1,0 +1,55 @@
+version: "3.8"
+services:
+  hospital-backend:
+    build:
+      context: ../hospital-backend
+      dockerfile: Dockerfile
+    container_name: hospital-backend
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/quotes
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: mauFJcuf5dhRMQrjj
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      FIREBASE_API_KEY: ${FIREBASE_API_KEY}
+      SERVER_PORT: 8081
+      FIREBASE_CREDENTIALS_FILE: /app/config/firebase-service-account.json
+    volumes:
+      - ./hospital-catalin-firebase-adminsdk-fbsvc-598a3c3550.json:/app/config/firebase-service-account.json
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mysql:latest
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      - MYSQL_DATABASE=quotes
+      - MYSQL_ROOT_PASSWORD=mauFJcuf5dhRMQrjj
+    ports:
+      - "3306:3306"
+    volumes:
+      - db:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  hospital-frontend:
+    build:
+      context: ../hospital-frontend/frontend
+      dockerfile: dockerfile
+    container_name: hospital-frontend
+    environment:
+      VITE_BASE_URL_BACKEND: http://hospital-backend:8081
+    ports:
+      - "3000:3000"
+    depends_on:
+      - hospital-backend
+volumes:
+  db:
+    driver: local

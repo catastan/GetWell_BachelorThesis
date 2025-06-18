@@ -1,0 +1,33 @@
+# Build stage
+FROM eclipse-temurin:23-jdk AS build
+
+WORKDIR /app
+
+# Copiem doar pom.xml + wrapper-ul mvnw (cu permisiuni)
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
+RUN chmod +x mvnw
+
+# Descărcăm dependențele (opțional, dar ajută la cache)
+RUN ./mvnw dependency:resolve
+
+# Copiem restul codului aplicației
+COPY . .
+
+# Build: compilăm aplicația și generăm JAR-ul
+RUN ./mvnw clean package -DskipTests
+
+# Run stage
+FROM eclipse-temurin:23-jre
+
+WORKDIR /app
+
+# Copiem JAR-ul generat din stage-ul de build
+COPY --from=build /app/target/hospital-backend-0.0.1-SNAPSHOT.jar app.jar
+
+# Expunem portul implicit Spring Boot
+EXPOSE 8081
+
+# Comanda de rulare
+ENTRYPOINT ["java", "-jar", "app.jar"]

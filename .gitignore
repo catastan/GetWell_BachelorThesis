@@ -1,0 +1,10 @@
+database/*firebase-adminsdk-*.json
+.env
+.env.*
+.DS_Store
+node_modules/
+build/
+dist/
+target/
+*.class
+*.log
